@@ -1,31 +1,31 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Game</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch JS Game</title>
     <style>
-      body { margin: 0; }
-      canvas { display: block; }
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; }
+        #debug {
+            position: absolute;
+            top: 10px; left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            font-family: monospace;
+            z-index: 10;
+            border-radius: 5px;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <canvas id="gameCanvas"></canvas>
-    <script type="module">
-      import { GameStage } from './main.js';
-      import { PlayerMovement } from './locomotion.js';
-      import { GameMap } from './enviroment.js';
+    
+    <div id="debug">
+        Player X: <span id="playerX">0</span> | Player Y: <span id="playerY">0</span> <br>
+        Hand X: <span id="handX">0</span> | Hand Y: <span id="handY">0</span>
+    </div>
 
-      const gameStage = new GameStage();
-      const playerMovement = new PlayerMovement(gameStage);
-      const gameMap = new GameMap(gameStage);
-
-      function animate() {
-        gameStage.update();
-        playerMovement.update();
-        gameMap.update();
-        requestAnimationFrame(animate);
-      }
-
-      animate();
-    </script>
-  </body>
+    <script src="game.js"></script>
+</body>
 </html>
