@@ -3,29 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scratch JS Game</title>
+    <title>Advanced Sprite Locomotion</title>
     <style>
-        body { margin: 0; overflow: hidden; background: black; }
-        canvas { display: block; }
-        #debug {
-            position: absolute;
-            top: 10px; left: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            font-family: monospace;
-            z-index: 10;
-            border-radius: 5px;
+        canvas {
+            border: 1px solid black;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    
-    <div id="debug">
-        Player X: <span id="playerX">0</span> | Player Y: <span id="playerY">0</span> <br>
-        Hand X: <span id="handX">0</span> | Hand Y: <span id="handY">0</span>
-    </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-    <script src="game.js"></script>
+        let player = {
+            x: 400,
+            y: 300,
+            width: 50,
+            height: 50,
+            speedX: 0,
+            speedY: 0,
+            direction: 0,
+            targetX: 400,
+            targetY: 300,
+            sprite: new Image(),
+            isColliding: false,
+        };
+
+        let hand = {
+            x: 400,
+            y: 300,
+            width: 30,
+            height: 30,
+            targetX: 400,
+            targetY: 300,
+            sprite: new Image(),
+        };
+
+        let camera = {
+            x: 0,
+            y: 0,
+            scrollSpeed: 5,
+        };
+
+        let level = new Image();
+        level.src = 'assets/base.png';
+
+        player.sprite.src = 'assets/Player Hitbox.png';
+        hand.sprite.src = 'assets/Hand Hitbox.png';
+
+        // Event to initialize game
+        window.onload = () => {
+            // Start the game loop
+            requestAnimationFrame(gameLoop);
+        };
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            handleInput();
+            applyPhysics();
+            movePlayer();
+            moveHand();
+            updateCamera();
+        }
+
+        function handleInput() {
+            // Example keyboard controls
+            if (keys['ArrowLeft']) player.targetX -= 5;
+            if (keys['ArrowRight']) player.targetX += 5;
+            if (keys['ArrowUp']) player.targetY -= 5;
+            if (keys['ArrowDown']) player.targetY += 5;
+        }
+
+        function applyPhysics() {
+            // Gravity affects the player and can be customized.
+            const gravity = 0.5;
+            player.speedY += gravity; // Apply gravity to the player
+            player.speedX *= 0.9; // Friction effect on X axis
+            player.speedY *= 0.9; // Friction effect on Y axis
+        }
+
+        function movePlayer() {
+            const distance = calculateDistance(player.targetX, player.targetY, player.x, player.y);
+            if (distance > 0) {
+                const angle = Math.atan2(player.targetY - player.y, player.targetX - player.x);
+                player.x += Math.cos(angle) * Math.min(distance, 5); // Move at a fixed speed
+                player.y += Math.sin(angle) * Math.min(distance, 5); // Move at a fixed speed
+                checkCollision(player);
+            }
+        }
+
+        function moveHand() {
+            const distance = calculateDistance(hand.targetX, hand.targetY, hand.x, hand.y);
+            if (distance > 0) {
+                const angle = Math.atan2(hand.targetY - hand.y, hand.targetX - hand.x);
+                hand.x += Math.cos(angle) * Math.min(distance, 5); // Fixed speed
+                hand.y += Math.sin(angle) * Math.min(distance, 5); // Fixed speed
+                checkCollision(hand);
+            }
+        }
+
+        function checkCollision(sprite) {
+            const levelBounds = { x: 0, y: 0, width: canvas.width, height: canvas.height }; // Level boundaries
+
+            // Check if the sprite collides with the level boundaries
+            if (sprite.x < levelBounds.x || sprite.x + sprite.width > levelBounds.x + levelBounds.width ||
+                sprite.y < levelBounds.y || sprite.y + sprite.height > levelBounds.y + levelBounds.height) {
+                sprite.isColliding = true;
+                // Collision resolution logic
+                if (sprite.x < levelBounds.x) sprite.x = levelBounds.x; // Left collision
+                if (sprite.x + sprite.width > levelBounds.x + levelBounds.width) sprite.x = levelBounds.x + levelBounds.width - sprite.width; // Right collision
+                if (sprite.y < levelBounds.y) sprite.y = levelBounds.y; // Top collision
+                if (sprite.y + sprite.height > levelBounds.y + levelBounds.height) sprite.y = levelBounds.y + levelBounds.height - sprite.height; // Bottom collision
+            } else {
+                sprite.isColliding = false;
+            }
+        }
+
+        function updateCamera() {
+            camera.x += (player.x - camera.x) / camera.scrollSpeed;
+            camera.y += (player.y - camera.y) / camera.scrollSpeed;
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(level, -camera.x, -camera.y);
+            ctx.drawImage(player.sprite, player.x - camera.x, player.y - camera.y, player.width, player.height);
+            ctx.drawImage(hand.sprite, hand.x - camera.x, hand.y - camera.y, hand.width, hand.height);
+        }
+
+        function calculateDistance(x1, y1, x2, y2) {
+            return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+        }
+
+        // Keyboard input handling
+        const keys = {};
+        window.addEventListener('keydown', (event) => {
+            keys[event.key] = true;
+        });
+
+        window.addEventListener('keyup', (event) => {
+            keys[event.key] = false;
+        });
+
+        // Set up event listeners for mouse movements
+        document.addEventListener('mousemove', (event) => {
+            // Update hand target based on mouse position
+            hand.targetX = event.clientX + camera.x;
+            hand.targetY = event.clientY + camera.y;
+        });
+    </script>
 </body>
 </html>
