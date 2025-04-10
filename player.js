@@ -1,3 +1,10 @@
+// updates:
+// v1: initial release
+// v2: added a new function to hopefully fix times where the player gets stuck in more complex maps
+// thats all of the current releases.
+
+
+// I thought about using classes, but i dont know enough about them yet to do so.
 // I tried my best to make sure i comment and explain everything so that people understand it better
 // This canvas is used for the main render
 const drawCanvas = document.getElementById("drawObj");
@@ -336,6 +343,12 @@ function gameLoop() {
   // update tx for next frame
   player.tx = player.x;
   player.ty = player.y;
+  // check if the player is stuck
+  let isStuck = sensePlayerTouch(objects.player, player.x - scroll.x + center.x, player.y - scroll.y + center.y);
+  if (isStuck === true) {
+    // im using 10 for now since the movePlayer logic should prevent the player from getting deep inside the enviroment
+    fixOverlap(10);
+  }
   // follow the player
   scroll.x += (player.x - scroll.x) / scroll.speed;
   scroll.y += (player.y - scroll.y) / scroll.speed;
@@ -345,4 +358,32 @@ function gameLoop() {
   draw(objects.hand, hand.x, hand.y);
   // loop
   requestAnimationFrame(gameLoop);
+}
+// If the player is stuck in the level, try to find an open area
+function fixOverlap(max) {
+  // create offset
+  let offset = {
+    x: "none",
+    y: "none",
+  }
+  // loop to find an open area
+  for (let i = 0; i < max; i++) {
+    const all = [0, Math.PI/2, Math.PI, 3*Math.PI/2]; // allow right, down, left, and up
+    for (let angle of all) {
+      // find space
+      offset.x = player.x + Math.cos(angle) * i;
+      offset.y = player.y + Math.sin(angle) * i;
+      // is colliding?
+      let isCollided = sensePlayerTouch(objects.player, offset.x - scroll.x + center.x, offset.y - scroll.y + center.y);
+      // if open space is found, set the new pos for the player
+      if (!isCollided) {
+        player.x = offset.x;
+        player.y = offset.y;
+        // ensures the target pos is set too
+        player.tx = player.x;
+        player.ty = player.y;
+        return;
+      }
+    }
+  }
 }
