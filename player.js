@@ -3,6 +3,7 @@
 // v2: added a new function to hopefully fix times where the player gets stuck in more complex maps
 // v3: working on adding something used to store the player data to be exported to other files to make it easier to implement multiplayer.
 // v3.1: changed the data to be a proper minified JSON
+// v4: after a lot of work, i created a function that parses the json to extract all data from it
 // btw in order to use export i need to set the type to module or it wont allow it
 // thats all of the current releases.
 
@@ -401,4 +402,102 @@ export function createJSON() {
   let y2 = Math.round(hand.y);
   // string
   return `{"player":{"x":${x1},"y":${y1}},"hand":{"x":${x2},"y":${y2}}}`;
+}
+// parse the json 
+function parseJSON(JSON) {
+  // data
+  let parse = {
+    i: 0,
+    r: "",
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0,
+  };
+  // search every ketter
+  for (let i = 0; parse.i < JSON.length; i++) {
+    // if the letter is p, it finds the x and y of the player
+    if (JSON[parse.i] === "p") {
+      parse.r = ""
+      for (let e = 0; e < "player".length; e++) {
+        parse.i += 1;
+      }
+      parse.i += 4;
+      // parse
+      if (JSON[parse.i] === "x") {
+        parse.i += 2;
+        for (let e = 0; parse.i < JSON.length; e++) {
+          // loop through each item
+          parse.i += 1;
+          parse.r += `${JSON[parse.i]}`;
+          if (JSON[(parse.i + 1)] === ",") {
+            // found the last number
+            parse.x1 = parse.r;
+            break;
+          }
+        }
+      }
+      // move to the numbers
+      parse.i += 3;
+      // clear
+      parse.r = "";
+      // parse
+      if (JSON[parse.i] === "y") {
+        parse.i += 2;
+        for (let e = 0; parse.i < JSON.length; e++) {
+          // loop through each item
+          parse.i += 1;
+          parse.r += `${JSON[parse.i]}`;
+          if (JSON[(parse.i + 1)] === "}") {
+            // found the last number
+            parse.y1 = parse.r;
+            break;
+          }
+        }
+      }
+    }
+    parse.i += 1;
+    // if the letter is h, it finds the x and y of the hand
+    if (JSON[parse.i] === "h") {
+     parse.r = ""
+     for (let e = 0; e < "hand".length; e++) {
+        parse.i += 1;
+      }
+      parse.i += 4;
+      // parse
+      if (JSON[parse.i] === "x") {
+        parse.i += 2;
+        for (let e = 0; parse.i < JSON.length; e++) {
+          // loop through each item
+          parse.i += 1;
+          parse.r += `${JSON[parse.i]}`;
+          if (JSON[(parse.i + 1)] === ",") {
+            // found the last number
+            parse.x2 = parse.r;
+            break;
+          }
+        }
+      }
+      // move
+      parse.i += 3;
+      // clear
+      parse.r = "";
+      // parse
+      if (JSON[parse.i] === "y") {
+        parse.i += 2;
+        for (let e = 0; parse.i < JSON.length; e++) {
+          // loop through each item
+          parse.i += 1;
+          parse.r += `${JSON[parse.i]}`;
+          if (JSON[(parse.i + 1)] === "}") {
+            // found the last number
+            parse.y2 = parse.r;
+            break;
+          }
+        }
+      }
+    }
+  }
+  // return the parsed data
+  return `${parse.x1}` + " " + `${parse.x2}` + " " + `${parse.y1}` + " " + `${parse.y2}`;
 }
