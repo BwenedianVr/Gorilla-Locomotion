@@ -1,6 +1,8 @@
 // updates:
 // v1: initial release
 // v2: added a new function to hopefully fix times where the player gets stuck in more complex maps
+// v3: working on adding something used to store the player data to be exported to other files to make it easier to implement multiplayer.
+// btw in order to use export i need to set the type to module or it wont allow it
 // thats all of the current releases.
 
 
@@ -356,6 +358,8 @@ function gameLoop() {
   draw(objects.enviroment, 0, 0);
   draw(objects.player, player.x, player.y);
   draw(objects.hand, hand.x, hand.y);
+  // group data for being sent to other js files
+  stringData();
   // loop
   requestAnimationFrame(gameLoop);
 }
@@ -386,4 +390,14 @@ function fixOverlap(max) {
       }
     }
   }
+}
+// simple, yet effective
+export function stringData() {
+  // round data so theres less info being sent
+  let x1 = Math.round(player.x);
+  let y1 = Math.round(player.y);
+  let x2 = Math.round(hand.x);
+  let y2 = Math.round(hand.y);
+  // string
+  return `{player:{x:${x1},y:${y1}},hand:{x:${x2},y:${y2}}}`;
 }
