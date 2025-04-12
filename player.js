@@ -4,7 +4,9 @@
 // v3: working on adding something used to store the player data to be exported to other files to make it easier to implement multiplayer.
 // v3.1: changed the data to be a proper minified JSON
 // v4: after a lot of work, i created a function that parses the json to extract all data from it
-// v4.1 added export support for the parser, and added a limit to how slow the camera can scroll, also made sure the parser returns integers and not strings using parseInt() 
+// v4.1: added export support for the parser, and added a limit to how slow the camera can scroll, also made sure the parser returns integers and not strings using parseInt() 
+// v5: implemented a feature to simplify obj data down from RBGA to A, optimized performance issues, fixed hand and mouse offset  
+// v5.1: released with v5, just added a data.performance var. Basically, 1 is the norm, and the higher the value, the faster the game runs. It comes with a cost though, the higher the value, the less accurate things will be.
 // btw in order to use export i need to set the type to module or it wont allow it
 // thats all of the current releases.
 
@@ -35,6 +37,7 @@ let data = {
   player: 0,
   hand: 0,
   enviroment: 0,
+  performance: 1,
 }
 // Loop until all assets load
 function loadAssets() {
@@ -66,8 +69,8 @@ function initObjects() {
   }
   objects.player.onload = function() {
     data.assets += 1;
-    let dataW = Math.max(objects.player.width, objects.enviroment.width);
-    let dataH = Math.max(objects.player.height, objects.enviroment.height);
+    let dataW = Math.max(objects.player.width, objects.player.width);
+    let dataH = Math.max(objects.player.height, objects.player.height);
     if (dataCanvas.width !== dataW || dataCanvas.height !== dataH) {
       dataCanvas.width = dataW;
       dataCanvas.height = dataH;
@@ -75,11 +78,12 @@ function initObjects() {
     idx.clearRect(0, 0, dataW, dataH);
     idx.drawImage(objects.player, 0, 0);
     data.player = idx.getImageData(0, 0, objects.player.width, objects.player.height).data;
+    simplifyPlayer();
   }
   objects.hand.onload = function() {
     data.assets += 1;
-    let dataW = Math.max(objects.hand.width, objects.enviroment.width);
-    let dataH = Math.max(objects.hand.height, objects.enviroment.height);
+    let dataW = Math.max(objects.hand.width, objects.hand.width);
+    let dataH = Math.max(objects.hand.height, objects.hand.height);
     if (dataCanvas.width !== dataW || dataCanvas.height !== dataH) {
       dataCanvas.width = dataW;
       dataCanvas.height = dataH;
@@ -87,6 +91,7 @@ function initObjects() {
     idx.clearRect(0, 0, dataW, dataH);
     idx.drawImage(objects.hand, 0, 0);
     data.hand = idx.getImageData(0, 0, objects.hand.width, objects.hand.height).data;
+    simplifyHand();
   }
   objects.enviroment.onload = function() {
     data.assets += 1;
@@ -96,10 +101,40 @@ function initObjects() {
       dataCanvas.width = dataW;
       dataCanvas.height = dataH;
     }
-    idx.clearRect(0, 0, dataW, dataH)
-    idx.drawImage(objects.enviroment, 0, 0)
-    data.enviroment = idx.getImageData(0, 0, objects.enviroment.width, objects.enviroment.height).data
+    idx.clearRect(0, 0, dataW, dataH);
+    idx.drawImage(objects.enviroment, 0, 0);
+    data.enviroment = idx.getImageData(0, 0, objects.enviroment.width, objects.enviroment.height).data;
+    simplifyEnv();
   }
+}
+// simplify the data so that less RAM is used. Why didnt i think of this earlier, i dont know tbh...
+// it didnt take long to make each one since after i made the enviroment i just had to copy and paste it 2 more times and change some stuff :)
+function simplifyEnv() {
+  let simplified = [];
+  // simple but works :)
+  for (let i = 3; i < data.enviroment.length; i += 4) {
+    // only add the 4th item aka the A val
+    simplified.push(data.enviroment[i]);
+  }
+  data.enviroment = simplified;
+}
+function simplifyPlayer() {
+  let simplified = [];
+  // simple but works :)
+  for (let i = 3; i < data.player.length; i += 4) {
+    // only add the 4th item aka the A val
+    simplified.push(data.player[i]);
+  }
+  data.player = simplified;
+}
+function simplifyHand() {
+  let simplified = [];
+  // simple but works :)
+  for (let i = 3; i < data.hand.length; i += 4) {
+    // only add the 4th item aka the A val
+    simplified.push(data.hand[i]);
+  }
+  data.hand = simplified;
 }
 // Create variable objects
 let center = {
@@ -143,9 +178,9 @@ function scrollSpeedCap(max) {
 }
 // Control
 function setPointer(mx, my) {
-  // subtract width so theres no offset
-  control.trueX = mx - objects.hand.width / 2;
-  control.trueY = my - objects.hand.height / 2;
+  // set the true mouse pos
+  control.trueX = mx;
+  control.trueY = my;
 }
 // Grab mouse position on desktop and mobile
 function getPointer(i) {
@@ -188,28 +223,33 @@ function senseHandTouch(obj, x, y) {
   let overlapTop = Math.max(objTop, envTop);
   let overlapRight = Math.min(objRight, envRight);
   let overlapBottom = Math.min(objBottom, envBottom);
+  // unlike before now it only searches onscreen pixels :)
+  overlapLeft = Math.max(overlapLeft, 0);
+  overlapTop = Math.max(overlapTop, 0);
+  overlapRight = Math.min(overlapRight, window.innerWidth);
+  overlapBottom = Math.min(overlapBottom, window.innerHeight);
   // check if the hand is within the border of the enviroment
   if (overlapLeft >= overlapRight || overlapTop >= overlapBottom) {
     return false; // if not, theres no collision
   }
-  let dataW = Math.max(obj.width, objects.enviroment.width);
-  let dataH = Math.max(obj.height, objects.enviroment.height);
+  let dataW = Math.max(obj.width, window.innerWidth);
+  let dataH = Math.max(obj.height, window.innerHeight);
   if (dataCanvas.width !== dataW || dataCanvas.height !== dataH) {
     dataCanvas.width = dataW;
     dataCanvas.height = dataH;
   }
   // search surrounding pixels
-  for (let y1 = overlapTop; y1 < overlapBottom; y1 += 1) {
-    for (let x1 = overlapLeft; x1 < overlapRight; x1 += 1) {
+  for (let y1 = overlapTop; y1 < overlapBottom; y1 += data.performance) {
+    for (let x1 = overlapLeft; x1 < overlapRight; x1 += data.performance) {
       let ox = x1 - objLeft;
       let oy = y1 - objTop;
       let ex = x1 - envLeft;
       let ey = y1 - envTop;
       // see if the pixels overlap
       if (ox <= 1 || ox >= obj.width - 2 || oy <= 1 || oy >= obj.height - 2) {
-        let i1 = (oy * obj.width + ox) * 4;
-        let i2 = (ey * objects.enviroment.width + ex) * 4;
-        if (data.hand[i1 + 3] > 0 && data.enviroment[i2 + 3] > 0) {
+        let i1 = (oy * obj.width + ox);
+        let i2 = (ey * objects.enviroment.width + ex);
+        if (data.hand[i1] > 0 && data.enviroment[i2] > 0) {
           return true;
         }
       }
@@ -232,28 +272,33 @@ function sensePlayerTouch(obj, x, y) {
   let overlapTop = Math.max(objTop, envTop);
   let overlapRight = Math.min(objRight, envRight);
   let overlapBottom = Math.min(objBottom, envBottom);
+  // only search onscreen
+  overlapLeft = Math.max(overlapLeft, 0);
+  overlapTop = Math.max(overlapTop, 0);
+  overlapRight = Math.min(overlapRight, window.innerWidth);
+  overlapBottom = Math.min(overlapBottom, window.innerHeight);
   // check if the hand is within the border of the enviroment
   if (overlapLeft >= overlapRight || overlapTop >= overlapBottom) {
     return false; // if not, theres no collision
   }
-  let dataW = Math.max(obj.width, objects.enviroment.width);
-  let dataH = Math.max(obj.height, objects.enviroment.height);
+  let dataW = Math.max(obj.width, window.innerWidth);
+  let dataH = Math.max(obj.height, window.innerHeight);
   if (dataCanvas.width !== dataW || dataCanvas.height !== dataH) {
     dataCanvas.width = dataW;
     dataCanvas.height = dataH;
   }
   // search surrounding pixels
-  for (let y1 = overlapTop; y1 < overlapBottom; y1 += 1) {
-    for (let x1 = overlapLeft; x1 < overlapRight; x1 += 1) {
+  for (let y1 = overlapTop; y1 < overlapBottom; y1 += data.performance) {
+    for (let x1 = overlapLeft; x1 < overlapRight; x1 += data.performance) {
       let ox = x1 - objLeft;
       let oy = y1 - objTop;
       let ex = x1 - envLeft;
       let ey = y1 - envTop;
       // see if the pixels overlap
       if (ox <= 1 || ox >= obj.width - 2 || oy <= 1 || oy >= obj.height - 2) {
-        let i1 = (oy * obj.width + ox) * 4;
-        let i2 = (ey * objects.enviroment.width + ex) * 4;
-        if (data.player[i1 + 3] > 0 && data.enviroment[i2 + 3] > 0) {
+        let i1 = (oy * obj.width + ox);
+        let i2 = (ey * objects.enviroment.width + ex);
+        if (data.player[i1] > 0 && data.enviroment[i2] > 0) {
           return true;
         }
       }
@@ -269,20 +314,20 @@ function movePlayer() {
   // get the distance
   getDistance(player.tx, player.ty, player.x, player.y);
   // repeat distance
-  for (let i = 0; i < Math.floor(data.distance); i ++) {
+  for (let i = 0; i < Math.floor(data.distance); i += data.performance) {
     // move x
-    player.x += Math.cos(data.direction);
+    player.x += data.performance * Math.cos(data.direction);
     let isCollide = sensePlayerTouch(objects.player, player.x - scroll.x + center.x, player.y - scroll.y + center.y);
     if (isCollide === true) {
       // if it touches, move back
-      player.x -= Math.cos(data.direction);
+      player.x -= data.performance * Math.cos(data.direction);
     }
     // move y
-    player.y += Math.sin(data.direction);
+    player.y += data.performance * Math.sin(data.direction);
     isCollide = sensePlayerTouch(objects.player, player.x - scroll.x + center.x, player.y - scroll.y + center.y);
     if (isCollide === true) {
       // if it touches, move back
-      player.y -= 1 * Math.sin(data.direction);
+      player.y -= data.performance * Math.sin(data.direction);
       // prevent gravity from acting upon the player
       player.sy = 0;
     }
@@ -295,26 +340,26 @@ function moveHand(force) {
   // get the distance
   getDistance(hand.tx, hand.ty, hand.x, hand.y);
   // repeat distance
-  for (let i = 0; i < Math.floor(data.distance); i ++) {
+  for (let i = 0; i < Math.floor(data.distance); i += data.performance) {
     // move x and y together, idk why but if you move them one at a time the hand doesnt stick
-    hand.x += Math.cos(data.direction);
-    hand.y += Math.sin(data.direction);
+    hand.x += data.performance * Math.cos(data.direction);
+    hand.y += data.performance * Math.sin(data.direction);
     let isCollide = senseHandTouch(objects.hand, hand.x - scroll.x + center.x, hand.y - scroll.y + center.y);
     if (isCollide === true) {
       // if it touches, move back
-      hand.x -= Math.cos(data.direction);
+      hand.x -= data.performance * Math.cos(data.direction);
       // push player target back and player sx back
-      player.tx -= Math.cos(data.direction);
-      player.sx -= force * Math.cos(data.direction);
+      player.tx -= data.performance * Math.cos(data.direction);
+      player.sx -= data.performance * (force * Math.cos(data.direction));
     }
     // check if its still in the level, if so, move out
     isCollide = senseHandTouch(objects.hand, hand.x - scroll.x + center.x, hand.y - scroll.y + center.y);
     if (isCollide === true) {
       // if it touches, move back
-      hand.y -= 1 * Math.sin(data.direction);
+      hand.y -= data.performance * Math.sin(data.direction);
       // push player target back and player sy back
-      player.ty -= Math.sin(data.direction);
-      player.sy -= force * Math.sin(data.direction);
+      player.ty -= data.performance * Math.sin(data.direction);
+      player.sy -= data.performance * (force * Math.sin(data.direction));
     }
   }
 }
