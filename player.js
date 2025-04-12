@@ -8,6 +8,7 @@
 // v5: implemented a feature to simplify obj data down from RBGA to A, optimized performance issues, fixed hand and mouse offset  
 // v5.1: released with v5, just added a data.performance var. Basically, 1 is the norm, and the higher the value, the faster the game runs. It comes with a cost though, the higher the value, the less accurate things will be.
 // v5.1.1 realized im an idiot and forgot to make a json var to export. instead i made the json function exportable. I only need the parser and actual json to be exportable so i fixed it and stuff
+// v5.1.2 fixed a bug with exports that broke the scripts
 // btw in order to use export i need to set the type to module or it wont allow it
 // thats all of the current releases.
 
@@ -420,8 +421,7 @@ function gameLoop() {
   draw(objects.player, player.x, player.y);
   draw(objects.hand, hand.x, hand.y);
   // create a json of the player so that it can be sent and decoded in one string
-  let playerJSON = createJSON();
-  export {playerJSON};
+  createJSON();
   // loop
   requestAnimationFrame(gameLoop);
 }
@@ -454,7 +454,7 @@ function fixOverlap(max) {
   }
 }
 // simple, yet effective
-function createJSON() {
+export function createJSON() {
   // round data so theres less info being sent
   let x1 = Math.round(player.x);
   let y1 = Math.round(player.y);
