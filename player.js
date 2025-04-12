@@ -4,6 +4,7 @@
 // v3: working on adding something used to store the player data to be exported to other files to make it easier to implement multiplayer.
 // v3.1: changed the data to be a proper minified JSON
 // v4: after a lot of work, i created a function that parses the json to extract all data from it
+// v4.1 added export support for the parser, and added a limit to how slow the camera can scroll, also made sure the parser returns integers and not strings using parseInt() 
 // btw in order to use export i need to set the type to module or it wont allow it
 // thats all of the current releases.
 
@@ -131,6 +132,15 @@ let control = {
   mouseX: 0,
   mouseY: 0,
 };
+function scrollSpeedCap(max) {
+  if (!scroll.speed <= max) {
+    // set scroll limit
+    scroll.speed = max;
+  } else if (scroll.speed < 1) {
+    // if its too low, set it to 1 so that the cam doesnt throw a fit
+    scroll.speed = 1;
+  }
+}
 // Control
 function setPointer(mx, my) {
   // subtract width so theres no offset
@@ -353,6 +363,9 @@ function gameLoop() {
     // im using 10 for now since the movePlayer logic should prevent the player from getting deep inside the enviroment
     fixOverlap(10);
   }
+  // makes sure the camera has limits 
+  // just in case someone uses my engine and makes the scroll speed either way to small (it will break if that happens) or way to slow (hard to control)
+  scrollSpeedCap(5);
   // follow the player
   scroll.x += (player.x - scroll.x) / scroll.speed;
   scroll.y += (player.y - scroll.y) / scroll.speed;
@@ -404,7 +417,7 @@ export function createJSON() {
   return `{"player":{"x":${x1},"y":${y1}},"hand":{"x":${x2},"y":${y2}}}`;
 }
 // parse the json 
-function parseJSON(JSON) {
+export function parseJSON(JSON) {
   // data
   let parse = {
     i: 0,
@@ -498,6 +511,13 @@ function parseJSON(JSON) {
       }
     }
   }
+  // HAHA JAVASCRIPT U CANT RUIN IT BY MAKING IT ALL STRINGS
+  // converts the parsed data into integers
+  parse.x1 = parseInt(parse.x1);
+  parse.y1 = parseInt(parse.y1);
+  parse.x2 = parseInt(parse.x2);
+  parse.y2 = parseInt(parse.y2);
   // return the parsed data
   return `${parse.x1}` + " " + `${parse.x2}` + " " + `${parse.y1}` + " " + `${parse.y2}`;
 }
+// i yap alot :(
