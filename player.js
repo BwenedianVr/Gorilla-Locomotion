@@ -9,6 +9,7 @@
 // v5.1: released with v5, just added a data.performance var. Basically, 1 is the norm, and the higher the value, the faster the game runs. It comes with a cost though, the higher the value, the less accurate things will be.
 // v5.1.1 realized im an idiot and forgot to make a json var to export. instead i made the json function exportable. I only need the parser and actual json to be exportable so i fixed it and stuff
 // v5.1.2 fixed a bug with exports that broke the scripts
+// v5.1.3 rounded mouse values to hopefully fix the shaking
 // btw in order to use export i need to set the type to module or it wont allow it
 // thats all of the current releases.
 
@@ -181,8 +182,9 @@ function scrollSpeedCap(max) {
 // Control
 function setPointer(mx, my) {
   // set the true mouse pos
-  control.trueX = mx;
-  control.trueY = my;
+  // round to prevent shaking
+  control.trueX = Math.round(mx);
+  control.trueY = Math.round(my);
 }
 // Grab mouse position on desktop and mobile
 function getPointer(i) {
